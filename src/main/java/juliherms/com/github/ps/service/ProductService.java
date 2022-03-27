@@ -32,25 +32,29 @@ public class ProductService {
     }
 
     /**
-     * Thsi classes responsible to save product
-     * @param productDTO
+     * Method responsible to find product by id
+     * @param productId
      * @return
      */
-    public Mono<ProductDTO> save(ProductDTO productDTO){
-
-        if(productDTO.getProductId() < 1){
-            throw new InvalidInputException("Invalid productId: " + productDTO.getProductId());
+    public Mono<ProductDTO> findProductById(int productId){
+        if(productId < 1){
+            throw new InvalidInputException("Invalid productId: " + productId);
         }
-
-        Product product = mapper.dtoToEntity(productDTO);
-        Mono<ProductDTO> newProduct = repository.save(product)
-                .log(LOG.getName(), FINE)
-                .onErrorMap(
-                        DuplicateKeyException.class,
-                        ex -> new InvalidInputException("Duplicate key, Product Id: " + productDTO.getProductId()))
+        return repository.findByProductId(productId)
                 .map(e -> mapper.entityToDTO(e));
+    }
 
-        return newProduct;
+    /**
+     * Thsi classes responsible to save product
+     * @param productDTOMono
+     * @return
+     */
+    public Mono<ProductDTO> save(Mono<ProductDTO> productDTOMono){
+        return productDTOMono
+                .map(e -> mapper.dtoToEntity(e))
+                .flatMap(repository::save)
+                .log(LOG.getName(), FINE)
+                .map(e -> mapper.entityToDTO(e));
     }
 
     public Mono<Void> delete(int productId){
